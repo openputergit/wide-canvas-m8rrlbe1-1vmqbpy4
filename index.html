@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoodSync - Your Personal Wellness Companion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f0f2f5;
+        }
+        .mood-gradient {
+            background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+        }
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .diary-content {
+            height: 200px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div id="loading" class="loading">
+        <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+
+    <!-- Login Section -->
+    <div id="loginSection" class="min-h-screen flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Welcome to MoodSync</h2>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <input type="email" id="email" placeholder="Email" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <input type="password" id="password" placeholder="Password" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <button type="submit" class="w-full py-3 mood-gradient text-white rounded-lg hover:opacity-90 transition-opacity">
+                    Login
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Section -->
+    <div id="mainApp" class="hidden">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center">
+                        <span class="text-xl font-bold text-indigo-600">MoodSync</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="moodCheck" class="px-4 py-2 rounded-full mood-gradient text-white">
+                            Check Mood
+                        </button>
+                        <button id="logoutBtn" class="text-gray-600 hover:text-gray-800">
+                            <i class="bi bi-box-arrow-right text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Mood Analysis -->
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4">Current Mood</h3>
+                    <div id="moodResult" class="text-center p-4">
+                        <i class="bi bi-emoji-smile text-4xl text-yellow-500"></i>
+                        <p class="mt-2">Take a mood test</p>
+                    </div>
+                </div>
+
+                <!-- Personal Diary -->
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4">Daily Journal</h3>
+                    <textarea id="diaryEntry" class="w-full p-3 border rounded-lg diary-content resize-none" placeholder="How are you feeling today?"></textarea>
+                    <button id="saveDiary" class="mt-4 px-4 py-2 mood-gradient text-white rounded-lg">Save Entry</button>
+                </div>
+
+                <!-- Music Recommendations -->
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4">Music for Your Mood</h3>
+                    <div id="musicList" class="space-y-2">
+                        <div class="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                            <span>Calming Playlist</span>
+                            <i class="bi bi-play-circle text-xl text-indigo-600 cursor-pointer"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendar -->
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4">Wellness Calendar</h3>
+                    <div id="calendar" class="grid grid-cols-7 gap-1">
+                        <!-- Calendar will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Doctor Recommendations -->
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4">Professional Help</h3>
+                    <div id="doctorList" class="space-y-3">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Skincare Routine -->
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4">Personalized Skincare</h3>
+                    <div id="skincareRoutine" class="space-y-2">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // App initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            const appSlug = 'moodsync-app-123456';
+            let currentUser = null;
+
+            // Login functionality
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                showLoading();
+                try {
+                    // Store user in MongoDB
+                    const response = await fetch('https://r0c8kgwocscg8gsokogwwsw4.zetaverse.one/mongodb', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer x9ySOdybKjaSBx2UzXsLdU51SVk2',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            appSlug,
+                            action: 'create',
+                            collection: 'users',
+                            data: { email, lastLogin: new Date() }
+                        })
+                    });
+
+                    if (response.ok) {
+                        currentUser = email;
+                        document.getElementById('loginSection').classList.add('hidden');
+                        document.getElementById('mainApp').classList.remove('hidden');
+                        initializeApp();
+                    }
+                } catch (error) {
+                    console.error('Login failed:', error);
+                } finally {
+                    hideLoading();
+                }
+            });
+
+            // Mood detection
+            document.getElementById('moodCheck').addEventListener('click', async () => {
+                showLoading();
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    const video = document.createElement('video');
+                    video.srcObject = stream;
+                    await video.play();
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0);
+
+                    const imageData = canvas.toDataURL('image/jpeg');
+                    
+                    // Use AI endpoint for mood detection
+                    const aiResponse = await fetch('https://r0c8kgwocscg8gsokogwwsw4.zetaverse.one/ai', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer x9ySOdybKjaSBx2UzXsLdU51SVk2',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            messages: [{
+                                role: 'user',
+                                content: [
+                                    { type: 'text', text: 'What emotion is shown in this image?' },
+                                    { type: 'image_url', image_url: { url: imageData } }
+                                ]
+                            }]
+                        })
+                    });
+
+                    const result = await aiResponse.json();
+                    document.getElementById('moodResult').innerHTML = `
+                        <i class="bi bi-emoji-smile text-4xl text-yellow-500"></i>
+                        <p class="mt-2">${result.message}</p>
+                    `;
+
+                    stream.getTracks().forEach(track => track.stop());
+                } catch (error) {
+                    console.error('Mood detection failed:', error);
+                } finally {
+                    hideLoading();
+                }
+            });
+
+            // Diary functionality
+            document.getElementById('saveDiary').addEventListener('click', async () => {
+                const entry = document.getElementById('diaryEntry').value;
+                showLoading();
+                try {
+                    await fetch('https://r0c8kgwocscg8gsokogwwsw4.zetaverse.one/mongodb', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer x9ySOdybKjaSBx2UzXsLdU51SVk2',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            appSlug,
+                            action: 'create',
+                            collection: 'diary',
+                            data: { userId: currentUser, entry, date: new Date() }
+                        })
+                    });
+                    document.getElementById('diaryEntry').value = '';
+                } catch (error) {
+                    console.error('Failed to save diary:', error);
+                } finally {
+                    hideLoading();
+                }
+            });
+
+            // Utility functions
+            function showLoading() {
+                document.getElementById('loading').style.display = 'flex';
+            }
+
+            function hideLoading() {
+                document.getElementById('loading').style.display = 'none';
+            }
+
+            function initializeApp() {
+                // Initialize calendar
+                const calendar = document.getElementById('calendar');
+                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                days.forEach(day => {
+                    const dayEl = document.createElement('div');
+                    dayEl.className = 'text-center font-semibold text-sm';
+                    dayEl.textContent = day;
+                    calendar.appendChild(dayEl);
+                });
+
+                // Add calendar dates
+                const today = new Date();
+                const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+                for (let i = 1; i <= daysInMonth; i++) {
+                    const dateEl = document.createElement('div');
+                    dateEl.className = `text-center p-2 ${i === today.getDate() ? 'bg-indigo-100 rounded-full' : ''}`;
+                    dateEl.textContent = i;
+                    calendar.appendChild(dateEl);
+                }
+
+                // Initialize skincare routines
+                const skincareRoutine = document.getElementById('skincareRoutine');
+                const routines = [
+                    'Cleanse',
+                    'Tone',
+                    'Moisturize',
+                    'Sunscreen'
+                ];
+                routines.forEach(routine => {
+                    const routineEl = document.createElement('div');
+                    routineEl.className = 'p-3 bg-gray-50 rounded-lg flex items-center justify-between';
+                    routineEl.innerHTML = `
+                        <span>${routine}</span>
+                        <i class="bi bi-check-circle text-green-500"></i>
+                    `;
+                    skincareRoutine.appendChild(routineEl);
+                });
+
+                // Initialize doctor recommendations
+                const doctorList = document.getElementById('doctorList');
+                const doctors = [
+                    { name: 'Dr. Sarah Johnson', specialty: 'Psychiatrist' },
+                    { name: 'Dr. Michael Chen', specialty: 'Therapist' }
+                ];
+                doctors.forEach(doctor => {
+                    const doctorEl = document.createElement('div');
+                    doctorEl.className = 'p-4 bg-gray-50 rounded-lg';
+                    doctorEl.innerHTML = `
+                        <h4 class="font-semibold">${doctor.name}</h4>
+                        <p class="text-sm text-gray-600">${doctor.specialty}</p>
+                        <button class="mt-2 px-3 py-1 text-sm mood-gradient text-white rounded">Book Appointment</button>
+                    `;
+                    doctorList.appendChild(doctorEl);
+                });
+            }
+
+            // Logout functionality
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                currentUser = null;
+                document.getElementById('loginSection').classList.remove('hidden');
+                document.getElementById('mainApp').classList.add('hidden');
+                document.getElementById('loginForm').reset();
+            });
+        });
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
